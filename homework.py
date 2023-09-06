@@ -44,9 +44,15 @@ def send_message(bot, message):
 def get_api_answer(timestamp):
     """
     Делает запрос к единственному эндпоинту API-сервиса.
-    В качестве параметра в функцию передается временная метка. 
+    В качестве параметра в функцию передается временная метка.
+    Возвращает ответ API, приведя его из формата JSON к типам данных Python.
     """
-    ...
+    print(timestamp)
+    payload = {'from_date': timestamp - RETRY_PERIOD * 6000000}
+    response = requests.get(
+        ENDPOINT, headers=HEADERS, params=payload
+    )
+    return response.json()
 
 
 def check_response(response):
@@ -55,7 +61,7 @@ def check_response(response):
     В качестве параметра функция получает ответ API.
     Приведенный к типам данных Python.
     """
-    ...
+    return response
 
 
 def parse_status(homework):
@@ -79,16 +85,12 @@ def main():
     while True:
         try:
             timestamp = int(time.time())
-            print(timestamp)
-            payload = {'from_date': timestamp - RETRY_PERIOD * 6000000}
-            homework_statuses = requests.get(
-                ENDPOINT, headers=HEADERS, params=payload
-            )
-            new_status = (homework_statuses.json())['homeworks'][0]['status']
-            if new_status != status:
-                print(status)
-                bot.send_message(TELEGRAM_CHAT_ID, new_status)
-                status = new_status
+            response = get_api_answer(timestamp)
+            homework = response['homeworks'][0]['status']
+            if homework != status:
+                print(homework)
+                bot.send_message(TELEGRAM_CHAT_ID, homework)
+                status = homework
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'

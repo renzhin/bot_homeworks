@@ -28,7 +28,9 @@ def check_tokens():
     Проверяет доступность переменных окружения.
     которые необходимы для работы программы.
     """
-    ...
+    if PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
+        return True
+    print('Отсутствует одна или несколько переменных окружения')
 
 
 def send_message(bot, message):
@@ -38,7 +40,7 @@ def send_message(bot, message):
     Принимает на вход два параметра.
     Экземпляр класса Bot и строку с текстом сообщения.
     """
-    ...
+    bot.send_message(TELEGRAM_CHAT_ID, message)
 
 
 def get_api_answer(timestamp):
@@ -69,33 +71,36 @@ def parse_status(homework):
     Извлекает из информации о конкретной домашней работе статус этой работы.
     В качестве параметра функция получает только один элемент из списка ДР.
     """
-    ...
+    verdict = HOMEWORK_VERDICTS[homework['status']]
+    homework_name = homework['homework_name']
 
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
 def main():
     """Основная логика работы бота."""
-    # ...
+    if check_tokens():
 
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    status = ''
-    # ...
+        bot = telegram.Bot(token=TELEGRAM_TOKEN)
+        status = ''
+        # ...
 
-    while True:
-        try:
-            timestamp = int(time.time())
-            response = get_api_answer(timestamp)
-            homework = response['homeworks'][0]['status']
-            if homework != status:
-                print(homework)
-                bot.send_message(TELEGRAM_CHAT_ID, homework)
-                status = homework
+        while True:
+            try:
+                timestamp = int(time.time())
+                response = get_api_answer(timestamp)
+                message = parse_status(response['homeworks'][0])
+                verdict = response['homeworks'][0]['status']
+                if verdict != status:
+                    check_response(response)
+                    print(verdict)
+                    send_message(bot, message)
+                    status = verdict
 
-        except Exception as error:
-            message = f'Сбой в работе программы: {error}'
-            print(message)
-        time.sleep(RETRY_PERIOD)
+            except Exception as error:
+                message = f'Сбой в работе программы: {error}'
+                print(message)
+            time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':

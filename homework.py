@@ -52,7 +52,11 @@ def send_message(bot, message):
     Принимает на вход два параметра.
     Экземпляр класса Bot и строку с текстом сообщения.
     """
-    bot.send_message(TELEGRAM_CHAT_ID, message)
+    try:
+        bot.send_message(TELEGRAM_CHAT_ID, message)
+        logging.debug('Успешная отправка сообщения в Telegram')
+    except Exception:
+        logging.error('Ошибка отправки сообщения в Telegram')
 
 
 def get_api_answer(timestamp):

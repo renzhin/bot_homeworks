@@ -66,7 +66,6 @@ def get_api_answer(timestamp):
     В качестве параметра в функцию передается временная метка.
     Возвращает ответ API, приведя его из формата JSON к типам данных Python.
     """
-    print(timestamp)
     payload = {'from_date': timestamp}
     try:
         response = requests.get(
@@ -124,7 +123,6 @@ def main():
             message = parse_status(response['homeworks'][0])
             verdict = response['homeworks'][0]['status']
             if verdict != status:
-                print(verdict)
                 send_message(bot, message)
                 status = verdict
 

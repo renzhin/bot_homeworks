@@ -70,7 +70,7 @@ def get_api_answer(timestamp):
     except Exception as error:
         logging.error(f'Ошибка при запросе к основному API: {error}')
     if response.status_code != HTTPStatus.OK:
-        raise logging.error('Статус не 200')
+        raise logging.error('Статус запроса отличен от 200')
     return response.json()
 
 
@@ -80,6 +80,14 @@ def check_response(response):
     В качестве параметра функция получает ответ API.
     Приведенный к типам данных Python.
     """
+    if not isinstance(response, dict):
+        raise TypeError('Ответ API не является словарем')
+
+    if response.get('homeworks') is None:
+        raise KeyError('В ответе API отсутствует ключ homeworks')
+
+    if not isinstance(response['homeworks'], list):
+        raise TypeError('Ответ API homeworks не является списком')
 
 
 def parse_status(homework):

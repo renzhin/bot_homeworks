@@ -1,6 +1,6 @@
 import logging
-import sys
 import os
+import sys
 import time
 from http import HTTPStatus
 
@@ -21,7 +21,7 @@ PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-RETRY_PERIOD = 10
+RETRY_PERIOD = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
@@ -66,7 +66,7 @@ def get_api_answer(timestamp):
     Возвращает ответ API, приведя его из формата JSON к типам данных Python.
     """
     print(timestamp)
-    payload = {'from_date': timestamp - RETRY_PERIOD * 6000000}
+    payload = {'from_date': timestamp}
     try:
         response = requests.get(
             ENDPOINT, headers=HEADERS, params=payload
@@ -99,9 +99,12 @@ def parse_status(homework):
     Извлекает из информации о конкретной домашней работе статус этой работы.
     В качестве параметра функция получает только один элемент из списка ДР.
     """
-    verdict = HOMEWORK_VERDICTS[homework['status']]
-    homework_name = homework['homework_name']
-
+    try:
+        homework['status'] in HOMEWORK_VERDICTS
+        verdict = HOMEWORK_VERDICTS[homework['status']]
+        homework_name = homework['homework_name']
+    except Exception:
+        logging.error('Статус отсутствует в словаре HOMEWORK_VERDICTS')
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 

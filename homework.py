@@ -1,9 +1,19 @@
+import logging
+import sys
 import os
 import time
+from http import HTTPStatus
 
 import requests
 import telegram
 from dotenv import load_dotenv
+
+logging.basicConfig(
+    level=logging.INFO,
+    filename='main.log',
+    format='%(asctime)s, %(levelname)s, %(message)s',
+    filemode='w'
+)
 
 load_dotenv()
 
@@ -30,7 +40,9 @@ def check_tokens():
     """
     if PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
         return True
-    print('Отсутствует одна или несколько переменных окружения')
+    else:
+        logging.critical('Отсутствует одна или несколько переменных окружения')
+        sys.exit(1)
 
 
 def send_message(bot, message):
@@ -51,9 +63,14 @@ def get_api_answer(timestamp):
     """
     print(timestamp)
     payload = {'from_date': timestamp - RETRY_PERIOD * 6000000}
-    response = requests.get(
-        ENDPOINT, headers=HEADERS, params=payload
-    )
+    try:
+        response = requests.get(
+            ENDPOINT, headers=HEADERS, params=payload
+        )
+    except Exception as error:
+        logging.error(f'Ошибка при запросе к основному API: {error}')
+    if response.status_code != HTTPStatus.OK:
+        raise logging.error('Статус не 200')
     return response.json()
 
 
@@ -63,7 +80,6 @@ def check_response(response):
     В качестве параметра функция получает ответ API.
     Приведенный к типам данных Python.
     """
-    return response
 
 
 def parse_status(homework):
@@ -79,28 +95,27 @@ def parse_status(homework):
 
 def main():
     """Основная логика работы бота."""
-    if check_tokens():
+    check_tokens()
 
-        bot = telegram.Bot(token=TELEGRAM_TOKEN)
-        status = ''
-        # ...
+    bot = telegram.Bot(token=TELEGRAM_TOKEN)
+    status = ''
+    timestamp = int(time.time())
 
-        while True:
-            try:
-                timestamp = int(time.time())
-                response = get_api_answer(timestamp)
-                message = parse_status(response['homeworks'][0])
-                verdict = response['homeworks'][0]['status']
-                if verdict != status:
-                    check_response(response)
-                    print(verdict)
-                    send_message(bot, message)
-                    status = verdict
+    while True:
+        try:
+            response = get_api_answer(timestamp)
+            check_response(response)
+            message = parse_status(response['homeworks'][0])
+            verdict = response['homeworks'][0]['status']
+            if verdict != status:
+                print(verdict)
+                send_message(bot, message)
+                status = verdict
 
-            except Exception as error:
-                message = f'Сбой в работе программы: {error}'
-                print(message)
-            time.sleep(RETRY_PERIOD)
+        except Exception as error:
+            message = f'Сбой в работе программы: {error}'
+            print(message)
+        time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':

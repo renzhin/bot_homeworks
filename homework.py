@@ -3,17 +3,18 @@ import os
 import sys
 import time
 from http import HTTPStatus
+from logging import Formatter, StreamHandler
 
 import requests
 import telegram
 from dotenv import load_dotenv
 
-logging.basicConfig(
-    level=logging.INFO,
-    filename='main.log',
-    format='%(asctime)s, %(levelname)s, %(message)s',
-    filemode='w'
-)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+handler = StreamHandler(stream=sys.stdout)
+handler.setFormatter(Formatter(fmt='%(asctime)s, %(levelname)s, %(message)s'))
+logger.addHandler(handler)
+
 
 load_dotenv()
 
@@ -41,7 +42,7 @@ def check_tokens():
     if PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
         return True
     else:
-        logging.critical('Отсутствует одна или несколько переменных окружения')
+        logger.critical('Отсутствует одна или несколько переменных окружения')
         sys.exit(1)
 
 
@@ -54,9 +55,9 @@ def send_message(bot, message):
     """
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
-        logging.debug('Успешная отправка сообщения в Telegram')
+        logger.debug('Успешная отправка сообщения в Telegram')
     except Exception:
-        logging.error('Ошибка отправки сообщения в Telegram')
+        logger.error('Ошибка отправки сообщения в Telegram')
 
 
 def get_api_answer(timestamp):
@@ -72,9 +73,9 @@ def get_api_answer(timestamp):
             ENDPOINT, headers=HEADERS, params=payload
         )
     except Exception as error:
-        logging.error(f'Ошибка при запросе к основному API: {error}')
+        logger.error(f'Ошибка при запросе к основному API: {error}')
     if response.status_code != HTTPStatus.OK:
-        raise logging.error('Статус запроса отличен от 200')
+        raise logger.error('Статус запроса отличен от 200')
     return response.json()
 
 
@@ -87,7 +88,7 @@ def check_response(response):
     if not isinstance(response, dict):
         raise TypeError('Ответ API не является словарем')
 
-    if response.get('homeworks') is None:
+    if not response.get('homeworks'):
         raise KeyError('В ответе API отсутствует ключ homeworks')
 
     if not isinstance(response['homeworks'], list):
@@ -104,7 +105,7 @@ def parse_status(homework):
         verdict = HOMEWORK_VERDICTS[homework['status']]
         homework_name = homework['homework_name']
     except Exception:
-        logging.error('Статус отсутствует в словаре HOMEWORK_VERDICTS')
+        logger.error('Статус отсутствует в словаре HOMEWORK_VERDICTS')
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 

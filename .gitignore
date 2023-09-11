@@ -150,3 +150,7 @@ static/
 posts/static/
 media/
 
+# прочее
+t.py
+t1.py
+

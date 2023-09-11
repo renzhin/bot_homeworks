@@ -68,8 +68,8 @@ def send_message(bot, message):
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logger.debug('Успешная отправка сообщения в Telegram')
-    except Exception:
-        logger.error('Ошибка отправки сообщения в Telegram')
+    except Exception as error:
+        logger.error(f'Ошибка отправки сообщения в Telegram: {error}')
 
 
 def get_api_answer(timestamp):
@@ -135,7 +135,7 @@ def main():
         try:
             response = get_api_answer(timestamp)
             homework = check_response(response)
-            print(response)
+            # print(response)
             if homework:
                 current_message = parse_status(homework[0])
                 if current_message != last_message:
@@ -149,7 +149,6 @@ def main():
             if message != last_message:
                 send_message(bot, message)
                 last_message = message
-            print(message)
         finally:
             timestamp = int(time.time())
             time.sleep(RETRY_PERIOD)

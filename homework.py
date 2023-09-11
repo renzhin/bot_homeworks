@@ -3,23 +3,30 @@ import os
 import sys
 import time
 from http import HTTPStatus
-from logging import FileHandler, Formatter
+from logging import FileHandler, Formatter, StreamHandler
+from pathlib import Path
 
 import requests
 import telegram
 from dotenv import load_dotenv
 
-logfile = 'log.log'
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-handler = FileHandler(logfile, mode='w', encoding='utf-8')
-handler.setFormatter(
-    Formatter(
-        fmt='[%(asctime)s, строка: %(lineno)d] - %(levelname)s : %(message)s'
+if __name__ == '__main__':
+    format = Formatter(
+        fmt='%(asctime)s, %(levelname)s, %(funcName)s, %(lineno)d, %(message)s'
     )
-)
-logger.addHandler(handler)
-
+    log_file_path = Path(__file__).parent / 'app.log'
+    file_handler = FileHandler(log_file_path, mode='w', encoding='utf-8')
+    file_handler.setLevel(logging.DEBUG)
+    file_formatter = format
+    file_handler.setFormatter(file_formatter)
+    logger.addHandler(file_handler)
+    console_handler = StreamHandler(stream=sys.stdout)
+    console_handler.setLevel(logging.DEBUG)
+    console_formatter = format
+    console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
 
 load_dotenv()
 
@@ -27,7 +34,7 @@ PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-RETRY_PERIOD = 600
+RETRY_PERIOD = 10
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
@@ -69,7 +76,7 @@ def send_message(bot, message):
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logger.debug('Успешная отправка сообщения в Telegram')
     except Exception as error:
-        logger.error(f'Ошибка отправки сообщения в Telegram: {error}')
+        raise ValueError(f'Ошибка отправки сообщения в Telegram: {error}')
 
 
 def get_api_answer(timestamp):
@@ -83,10 +90,10 @@ def get_api_answer(timestamp):
         response = requests.get(
             ENDPOINT, headers=HEADERS, params=payload
         )
-    except Exception as error:
-        logger.error(f'Ошибка при запросе к основному API: {error}')
+    except requests.RequestException as error:
+        raise ConnectionError(f'Ошибка при запросе к основному API: {error}')
     if response.status_code != HTTPStatus.OK:
-        raise logger.error('Статус запроса отличен от 200')
+        raise ValueError('Статус запроса отличен от 200')
     return response.json()
 
 
@@ -135,7 +142,6 @@ def main():
         try:
             response = get_api_answer(timestamp)
             homework = check_response(response)
-            # print(response)
             if homework:
                 current_message = parse_status(homework[0])
                 if current_message != last_message:

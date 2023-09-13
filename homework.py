@@ -76,7 +76,7 @@ def send_message(bot, message):
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logger.debug('Успешная отправка сообщения в Telegram')
     except Exception as error:
-        raise ValueError(f'Ошибка отправки сообщения в Telegram: {error}')
+        logger.error(f'Ошибка отправки сообщения в Telegram: {error}')
 
 
 def get_api_answer(timestamp):
@@ -104,12 +104,14 @@ def check_response(response):
     Приведенный к типам данных Python.
     """
     if not isinstance(response, dict):
-        raise TypeError('Ответ API не является словарем')
+        raise TypeError(f'Ответ API не является словарем: {type(response)}')
     if 'homeworks' not in response:
         raise KeyError('В ответе API отсутствует ключ homeworks')
     home_works = response['homeworks']
     if not isinstance(home_works, list):
-        raise TypeError('Ответ API homeworks не является списком')
+        raise TypeError(
+            f'Ответ API homeworks не является списком: {type(home_works)}'
+        )
     logger.debug('Данные, полученные в запросе к API проверены')
     return home_works
 
@@ -121,9 +123,10 @@ def parse_status(homework):
     """
     if 'homework_name' not in homework:
         raise KeyError('Ключ homework_name отсутсвует')
-    if homework['status'] not in HOMEWORK_VERDICTS:
+    homework_status = homework['status']
+    if homework_status not in HOMEWORK_VERDICTS:
         raise ValueError('Ключ status отсутствует')
-    verdict = HOMEWORK_VERDICTS[homework['status']]
+    verdict = HOMEWORK_VERDICTS[homework_status]
     homework_name = homework['homework_name']
     logger.debug('Извлечение статуса работы из ответа API закончено')
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'

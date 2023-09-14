@@ -4,23 +4,14 @@ import sys
 import time
 from http import HTTPStatus
 from logging import FileHandler, StreamHandler
-from pathlib import Path
 
 import requests
 import telegram
 from dotenv import load_dotenv
 
-
 logger = logging.getLogger(__name__)
-log_file_path = Path(__file__).parent / 'app.log'
-file_handler = FileHandler(filename=log_file_path, mode='w', encoding='utf-8')
+file_handler = FileHandler(filename='app.log', mode='w', encoding='utf-8')
 console_handler = StreamHandler(stream=sys.stdout)
-if __name__ == '__main__':
-    logging.basicConfig(
-        format='%(asctime)s, %(levelname)s, %(funcName)s, %(message)s',
-        handlers=[file_handler, console_handler],
-        level=logging.DEBUG,
-    )
 
 load_dotenv()
 
@@ -158,4 +149,9 @@ def main():
 
 
 if __name__ == '__main__':
+    logging.basicConfig(
+        format='%(asctime)s, %(levelname)s, %(funcName)s, %(message)s',
+        handlers=[file_handler, console_handler],
+        level=logging.DEBUG,
+    )
     main()

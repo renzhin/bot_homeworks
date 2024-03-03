@@ -53,7 +53,8 @@ pip install -r requirements.txt
 python homework.py
 ```
 
-### Пример заполнения файла с переменными окружения.env:
+### Пример заполнения файла с переменными окружения .env:
+Создайте файл .env и положите его в корень проекта.<br>
 ````
 PRACTICUM_TOKEN=123456789
 TELEGRAM_TOKEN=123456789
